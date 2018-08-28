@@ -14,26 +14,18 @@ import java.util.concurrent.CountDownLatch;
  */
 public class ZkBase implements Watcher{
 
-    private static final int SEESSION_TIMEOUT = 2000;
-
     private static final Logger logger = Logger.getLogger(ZkBase.class);
 
-    private String zkAddress;
-
     private CountDownLatch countDownLatch = new CountDownLatch(1);
-
-    public ZkBase(String zkAddress) {
-        this.zkAddress = zkAddress;
-    }
 
     /**
      * 获取zookeeper连接
      * @return
      */
-    public ZooKeeper connectZkServer(){
+    public ZooKeeper connectZkServer(String zkAddress){
         ZooKeeper zk = null;
         try {
-            zk = new ZooKeeper(zkAddress, SEESSION_TIMEOUT, new ZkBase(zkAddress));
+            zk = new ZooKeeper(zkAddress, Constants.SEESSION_TIMEOUT, new ZkBase());
             countDownLatch.await();
         }catch (IOException|InterruptedException e){
             logger.error("连接zookeeper服务器失败",e);
@@ -49,9 +41,23 @@ public class ZkBase implements Watcher{
         }
     }
 
+    /**
+     * 关闭zookeeper连接
+     * @param zk
+     */
+    public void disConnect(ZooKeeper zk){
+        if(zk!=null){
+            try {
+                zk.close();
+            }catch (InterruptedException e) {
+                logger.error("关闭连接失败",e);
+            }
+        }
+    }
+
     //TODO remove
     public static void main(String[] args) {
-        ZkBase zkBase = new ZkBase("54.251.182.155:2181");
-        System.out.println(zkBase.connectZkServer().getState());
+        ZkBase zkBase = new ZkBase();
+        System.out.println(zkBase.connectZkServer("54.251.182.155:2181").getState());
     }
 }
