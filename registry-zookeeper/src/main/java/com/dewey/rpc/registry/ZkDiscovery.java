@@ -1,5 +1,8 @@
 package com.dewey.rpc.registry;
 
+import com.dewey.rpc.common.Constants;
+import com.dewey.rpc.loadbalance.LoadBalance;
+import com.dewey.rpc.loadbalance.impl.LoadBalanceDemo;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -9,10 +12,11 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 
 /**
+ * @author dewey
+ * @date 2018/9/1 23:36
  * 服务发现
- * @author deweyding
  */
-public class ZkDiscovery implements discovery{
+public class ZkDiscovery implements Discovery {
 
     private static final Logger logger = Logger.getLogger(ZkDiscovery.class);
 
@@ -22,9 +26,12 @@ public class ZkDiscovery implements discovery{
 
     private ZkBase zkBase;
 
+    private LoadBalance loadBalance;
+
     public ZkDiscovery(String zkAddress){
         this.zkAddress = zkAddress;
         zkBase = new ZkBase();
+        zk = zkBase.connectZkServer(zkAddress);
     }
     @Override
     public String discovery(String serviceName) {
@@ -32,14 +39,14 @@ public class ZkDiscovery implements discovery{
             logger.info("查找服务名为空");
             return "";
         }
-        ZooKeeper zk = zkBase.connectZkServer(zkAddress);
-        String servicePath = Constants.ZK_DATA_PATH+"/"+serviceName;
+        loadBalance = new LoadBalanceDemo();
+        String servicePath = Constants.ZK_SERVICE_PATH+"/"+serviceName;
         try {
             Stat stat = zk.exists(servicePath,false);
             if(stat==null){
                 throw new RuntimeException(String.format("找不到对应的服务:%s ",servicePath));
             }
-            List<String> addressList = zk.getChildren(servicePath,false);
+            List<String> addressList = zk.getChildren(servicePath,null,null);
             if(CollectionUtils.isEmpty(addressList)){
                 throw new RuntimeException(String.format("找不到对应的服务:%s",servicePath));
             }
@@ -48,15 +55,21 @@ public class ZkDiscovery implements discovery{
                 address = addressList.get(0);
                 logger.info(String.format("找到服务节点:%s",address));
             }else{
-                address = LoadBalance.;
+                address = loadBalance.randomLoad(addressList);
                 logger.info(String.format("找到服务节点:%s",address));
             }
-            String addressPath = servicePath+"/"+address;
-            return zk.
+            String[] strs = address.split("_");
+            if(strs.length == 0){
+                logger.info(String.format("address解析出错：%s",address));
+                return null;
+            }
+            String host = address.split("_")[0];
+            return host;
         } catch (InterruptedException|KeeperException e) {
             logger.error("查找对应服务失败",e);
         }finally {
             zkBase.disConnect(zk);
         }
+        return "";
     }
 }

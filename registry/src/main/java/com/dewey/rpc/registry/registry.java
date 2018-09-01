@@ -1,10 +1,10 @@
 package com.dewey.rpc.registry;
 
 /**
- * @author deweyding
- * @
+ * @author dewey
+ * @date 2018/9/1 23:36
  */
-public interface registry {
+public interface Registry {
     /**
      * 服务注册
      * @param serviceName

@@ -1,5 +1,6 @@
 package com.dewey.rpc.registry;
 
+import com.dewey.rpc.common.Constants;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -9,10 +10,10 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 /**
- *
- * @author deweyding
+ * @author dewey
+ * @date 2018/9/1 23:36
  */
-public class ZkBase implements Watcher{
+public class ZkBase {
 
     private static final Logger logger = Logger.getLogger(ZkBase.class);
 
@@ -25,20 +26,20 @@ public class ZkBase implements Watcher{
     public ZooKeeper connectZkServer(String zkAddress){
         ZooKeeper zk = null;
         try {
-            zk = new ZooKeeper(zkAddress, Constants.SEESSION_TIMEOUT, new ZkBase());
+            zk = new ZooKeeper(zkAddress, Constants.SEESSION_TIMEOUT, new Watcher() {
+                @Override
+                public void process(WatchedEvent event) {
+                    if(event.getState()== Watcher.Event.KeeperState.SyncConnected){
+                        countDownLatch.countDown();
+                        logger.info("连接到zookeeper服务器");
+                    }
+                }
+            });
             countDownLatch.await();
         }catch (IOException|InterruptedException e){
             logger.error("连接zookeeper服务器失败",e);
         }
         return zk;
-    }
-
-    @Override
-    public void process(WatchedEvent event) {
-        if(event.getState()== Watcher.Event.KeeperState.SyncConnected){
-            countDownLatch.countDown();
-            logger.info("连接到zookeeper服务器");
-        }
     }
 
     /**
@@ -55,9 +56,4 @@ public class ZkBase implements Watcher{
         }
     }
 
-    //TODO remove
-    public static void main(String[] args) {
-        ZkBase zkBase = new ZkBase();
-        System.out.println(zkBase.connectZkServer("54.251.182.155:2181").getState());
-    }
 }
