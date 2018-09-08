@@ -9,6 +9,9 @@
     <modules>
         <module>registry</module>
 		<module>registry-zookeeper</module>
+		<module>client</module>
+		<module>server</module>
+		<module>common</module>
 	</modules>
     <packaging>pom</packaging>
 
